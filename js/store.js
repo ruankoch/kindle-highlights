@@ -117,9 +117,13 @@ export function query({ books, themes, search, favOnly, sort } = {}) {
   return res;
 }
 
-// counts of themes / books given the current (partial) filter — for sidebar badges
-export function facetCounts({ books, search, favOnly } = {}) {
+// counts of themes / books given the current (partial) filter — for sidebar badges.
+// book counts reflect the theme/search/fav filter (but NOT the book selection, so you can
+// still add more books); theme counts reflect the book/search/fav filter (but NOT the
+// theme selection, so you can still add more themes).
+export function facetCounts({ books, themes, search, favOnly } = {}) {
   const bookSet = books && books.size ? books : null;
+  const themeSet = themes && themes.size ? themes : null;
   const q = (search || '').trim().toLowerCase();
   const terms = q ? q.split(/\s+/) : null;
   const themeCounts = new Map();
@@ -127,11 +131,8 @@ export function facetCounts({ books, search, favOnly } = {}) {
   for (const h of state.allHighlights) {
     if (favOnly && !state.favSet.has(h.id)) continue;
     if (terms) { const txt = h.t.toLowerCase(); let ok = true; for (const t of terms) if (!txt.includes(t)) { ok = false; break; } if (!ok) continue; }
-    // book counts respect theme/search but NOT the book selection (so you can add books)
-    bookCounts.set(h.b, (bookCounts.get(h.b) || 0) + 1);
-    if (!bookSet || bookSet.has(h.b)) {
-      for (const t of h.th) themeCounts.set(t, (themeCounts.get(t) || 0) + 1);
-    }
+    if (!themeSet || h.th.some(t => themeSet.has(t))) bookCounts.set(h.b, (bookCounts.get(h.b) || 0) + 1);
+    if (!bookSet || bookSet.has(h.b)) { for (const t of h.th) themeCounts.set(t, (themeCounts.get(t) || 0) + 1); }
   }
   return { themeCounts, bookCounts };
 }

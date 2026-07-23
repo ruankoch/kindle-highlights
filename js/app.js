@@ -67,7 +67,7 @@ function renderSidebar() {
 }
 
 function renderBookList() {
-  const { bookCounts } = store.facetCounts({ books: F.books, search: F.search, favOnly: effectiveFavOnly() });
+  const { bookCounts } = store.facetCounts({ books: F.books, themes: F.themes, search: F.search, favOnly: effectiveFavOnly() });
   const filterActive = F.themes.size || F.search || effectiveFavOnly();
   const q = $('#bookFilter').value.trim().toLowerCase();
   let books = store.state.allBooks.map(b => ({ b, c: bookCounts.get(b.id) || 0 }));
@@ -89,7 +89,7 @@ function renderBookList() {
 }
 
 function renderThemeChips() {
-  const { themeCounts } = store.facetCounts({ books: F.books, search: F.search, favOnly: effectiveFavOnly() });
+  const { themeCounts } = store.facetCounts({ books: F.books, themes: F.themes, search: F.search, favOnly: effectiveFavOnly() });
   const box = $('#themeChips'); box.innerHTML = '';
   const themes = [...store.state.themesById.values()]
     .map(t => ({ t, c: themeCounts.get(t.id) || 0 }))
