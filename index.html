@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="theme-color" content="#0f1115" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Highlights" />
+<title>Kindle Highlights</title>
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" href="./icons/icon-192.png" />
+<link rel="apple-touch-icon" href="./icons/icon-192.png" />
+<link rel="stylesheet" href="./app.css" />
+</head>
+<body data-theme="dark">
+<div id="app" class="app">
+
+  <!-- ================= HEADER ================= -->
+  <header class="app-header">
+    <button id="menuBtn" class="icon-btn only-mobile" aria-label="Filters">☰</button>
+    <div class="brand">
+      <h1>Highlights</h1>
+      <p id="subStats" class="sub">loading…</p>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-view="browse">Browse</button>
+      <button class="tab" data-view="books">Books</button>
+      <button class="tab" data-view="favourites">★ Favourites</button>
+    </nav>
+    <div class="header-actions">
+      <button id="syncBtn" class="icon-btn" title="Sync with Google Sheets" aria-label="Sync">
+        <span id="syncDot" class="sync-dot local"></span><span class="sync-label">Sync</span>
+      </button>
+      <button id="themeBtn" class="icon-btn" aria-label="Toggle theme">🌙</button>
+      <button id="settingsBtn" class="icon-btn" aria-label="Settings">⚙</button>
+    </div>
+  </header>
+
+  <div class="body">
+    <!-- ================= SIDEBAR (filters) ================= -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-scroll">
+        <section class="panel">
+          <label class="lbl">Search highlights</label>
+          <div class="search-wrap">
+            <input id="searchBox" type="search" placeholder="e.g. risk, faith, owner operator…" autocomplete="off" />
+          </div>
+          <label class="chk-row">
+            <input type="checkbox" id="favOnly" /> <span>★ Favourites only</span>
+          </label>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Books <span id="bookSelCount" class="count-pill"></span></h2>
+            <button id="clearBooks" class="link-btn">clear</button>
+          </div>
+          <input id="bookFilter" type="search" placeholder="Filter book list…" autocomplete="off" />
+          <div id="bookList" class="checklist"></div>
+          <button id="selectVisibleBooks" class="link-btn small">select visible</button>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Themes <span id="themeSelCount" class="count-pill"></span></h2>
+            <button id="clearThemes" class="link-btn">clear</button>
+          </div>
+          <div id="themeChips" class="chips"></div>
+        </section>
+
+        <button id="clearAll" class="btn wide">Clear all filters</button>
+      </div>
+    </aside>
+    <div id="scrim" class="scrim"></div>
+
+    <!-- ================= MAIN ================= -->
+    <main class="main">
+      <!-- BROWSE / FAVOURITES viewer -->
+      <section id="view-browse" class="view active">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <span id="resultCount" class="result-count">—</span>
+            <span id="filterSummary" class="filter-summary"></span>
+          </div>
+          <div class="toolbar-right">
+            <select id="sortSel" class="mini-select" aria-label="Sort">
+              <option value="book">By book</option>
+              <option value="loc">By location</option>
+              <option value="theme">By theme</option>
+              <option value="len">Longest first</option>
+              <option value="added">Recently added</option>
+            </select>
+            <div class="seg" role="tablist">
+              <button id="modeList" class="seg-btn active">List</button>
+              <button id="modeFlick" class="seg-btn">Flick</button>
+            </div>
+            <button id="addHlBtn" class="btn small">+ Add</button>
+          </div>
+        </div>
+
+        <!-- LIST MODE -->
+        <div id="listMode" class="list-mode">
+          <div id="cards" class="cards"></div>
+          <button id="loadMore" class="btn wide ghost hidden">Load more</button>
+          <div id="emptyState" class="empty hidden"></div>
+        </div>
+
+        <!-- FLICK MODE -->
+        <div id="flickMode" class="flick-mode hidden">
+          <div id="flickCard" class="flick-card">
+            <div class="flick-inner">
+              <div class="flick-meta">
+                <span id="flickBook" class="flick-book"></span>
+                <span id="flickThemes" class="flick-themes"></span>
+              </div>
+              <blockquote id="flickText" class="flick-text"></blockquote>
+              <div id="flickNote" class="flick-note hidden"></div>
+              <div class="flick-actions">
+                <button id="flickFav" class="action-btn" title="Favourite">☆</button>
+                <button id="flickNoteBtn" class="action-btn" title="Note">✎</button>
+                <button id="flickCopy" class="action-btn" title="Copy">⧉</button>
+                <button id="flickDelete" class="action-btn danger" title="Delete">🗑</button>
+              </div>
+            </div>
+          </div>
+          <div class="flick-nav">
+            <button id="flickPrev" class="nav-btn" aria-label="Previous">‹</button>
+            <span id="flickProgress" class="flick-progress">0 / 0</span>
+            <button id="flickNext" class="nav-btn" aria-label="Next">›</button>
+          </div>
+          <p class="flick-hint only-desktop">Use ← → arrows · F to favourite · Del to delete</p>
+          <p class="flick-hint only-mobile">Swipe left/right · tap ☆ to favourite</p>
+        </div>
+      </section>
+
+      <!-- BOOKS explorer -->
+      <section id="view-books" class="view">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input id="bookExploreFilter" type="search" placeholder="Find a book or author…" autocomplete="off" />
+          </div>
+          <div class="toolbar-right">
+            <select id="bookSort" class="mini-select" aria-label="Sort books">
+              <option value="count">Most highlights</option>
+              <option value="title">Title A–Z</option>
+              <option value="author">Author A–Z</option>
+            </select>
+            <div class="seg">
+              <button id="bookModeGrid" class="seg-btn active">Grid</button>
+              <button id="bookModeFlick" class="seg-btn">Flick</button>
+            </div>
+          </div>
+        </div>
+        <div id="bookGrid" class="book-grid"></div>
+        <div id="bookFlick" class="book-flick hidden">
+          <div id="bookFlickCard" class="book-flick-card"></div>
+          <div class="flick-nav">
+            <button id="bookFlickPrev" class="nav-btn" aria-label="Previous">‹</button>
+            <span id="bookFlickProgress" class="flick-progress">0 / 0</span>
+            <button id="bookFlickNext" class="nav-btn" aria-label="Next">›</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Settings & Sync</h3><button class="icon-btn close" data-close>✕</button></div>
+    <div class="modal-body">
+      <label class="lbl">Google Apps Script Web App URL</label>
+      <input id="cfgUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" />
+      <label class="lbl">Sync token (shared secret)</label>
+      <input id="cfgToken" type="text" placeholder="the token you set in the script" />
+      <div class="row">
+        <button id="testConn" class="btn">Test & sync now</button>
+        <button id="disconnect" class="btn ghost">Disconnect</button>
+      </div>
+      <p id="connMsg" class="conn-msg"></p>
+      <hr />
+      <div class="row">
+        <button id="exportJson" class="btn ghost">Export favourites/notes</button>
+        <button id="pushAll" class="btn ghost">Push local → Sheet</button>
+      </div>
+      <p class="hint">Not connected? Everything still works and saves on this device. Connect a Sheet to sync across iPhone + desktop. Setup steps are in the repo README.</p>
+    </div>
+  </div>
+</div>
+
+<div id="addModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Add highlight</h3><button class="icon-btn close" data-close>✕</button></div>
+    <div class="modal-body">
+      <label class="lbl">Book</label>
+      <input id="addBook" list="bookDatalist" placeholder="Existing or new book title" />
+      <datalist id="bookDatalist"></datalist>
+      <label class="lbl">Author (only if new book)</label>
+      <input id="addAuthor" placeholder="Author" />
+      <label class="lbl">Highlight text</label>
+      <textarea id="addText" rows="5" placeholder="Paste the highlight…"></textarea>
+      <label class="lbl">Themes</label>
+      <div id="addThemes" class="chips small-chips"></div>
+      <div class="row">
+        <button id="addSave" class="btn">Save highlight</button>
+        <button class="btn ghost" data-close>Cancel</button>
+      </div>
+      <p id="addMsg" class="conn-msg"></p>
+    </div>
+  </div>
+</div>
+
+<div id="noteModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Note</h3><button class="icon-btn close" data-close>✕</button></div>
+    <div class="modal-body">
+      <textarea id="noteText" rows="4" placeholder="Your note on this highlight…"></textarea>
+      <div class="row"><button id="noteSave" class="btn">Save note</button><button class="btn ghost" data-close>Cancel</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
