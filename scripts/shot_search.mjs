@@ -12,7 +12,7 @@ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/ch
 const p=await b.newPage({viewport:{width:1280,height:900}});
 await p.goto(base,{waitUntil:'networkidle'});
 await p.waitForSelector('.hl-card');
-await p.fill('#searchBox','risk');
+await p.fill('#searchBox','value');
 await p.waitForTimeout(500);
 const marks = await p.$$eval('.hl-text mark', els=>els.map(e=>e.textContent));
 console.log('mark count:', marks.length, 'samples:', [...new Set(marks)].slice(0,5));

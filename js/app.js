@@ -21,6 +21,17 @@ function markHtml(text) {
   if (!pat.length) return esc;
   return esc.replace(new RegExp('(' + pat.join('|') + ')', 'gi'), '<mark>$1</mark>');
 }
+function countMatches(...texts) {
+  const terms = searchTerms();
+  if (!terms.length) return 0;
+  let n = 0;
+  for (const text of texts) {
+    const low = (text || '').toLowerCase();
+    for (const t of terms) { const tl = t.toLowerCase(); if (!tl) continue; let i = 0; while ((i = low.indexOf(tl, i)) !== -1) { n++; i += tl.length; } }
+  }
+  return n;
+}
+function matchBadge(n) { return n ? `<span class="match-badge">${n} match${n > 1 ? 'es' : ''}</span>` : ''; }
 
 // ---------- filter + view state ----------
 const F = { books: new Set(), themes: new Set(), search: '', favOnly: false, sort: 'book' };
@@ -164,8 +175,15 @@ function hlCard(h) {
   const b = store.book(h.b) || { title: 'Unknown', author: '' };
   const card = el('div', 'hl-card' + (store.isFav(h.id) ? ' fav' : ''));
   const top = el('div', 'hl-top');
-  const bk = el('span', 'hl-book', b.title);
+  const left = el('div', 'hl-top-left');
+  const bk = el('span', 'hl-book');
+  bk.innerHTML = markHtml(b.title);
   bk.addEventListener('click', () => focusBook(h.b));
+  left.append(bk);
+  if (searchTerms().length) {
+    const n = countMatches(h.t, b.title);
+    if (n) { const badge = el('span'); badge.innerHTML = matchBadge(n); left.append(badge.firstChild); }
+  }
   const acts = el('div', 'hl-actions');
   acts.append(
     actionBtn(store.isFav(h.id) ? '★' : '☆', 'Favourite', store.isFav(h.id), e => { const on = store.toggleFav(h.id); e.target.textContent = on ? '★' : '☆'; e.target.classList.toggle('on', on); card.classList.toggle('fav', on); }),
@@ -173,7 +191,7 @@ function hlCard(h) {
     actionBtn('⧉', 'Copy', false, () => copyHl(h, b)),
     actionBtn('🗑', 'Delete', false, () => { if (confirm('Delete this highlight? It will be hidden on all your devices (reversible from the Sheet).')) store.toggleDelete(h.id); }, 'danger'),
   );
-  top.append(bk, acts);
+  top.append(left, acts);
   const txt = el('div', 'hl-text');
   txt.innerHTML = markHtml(h.t);
   card.append(top, txt);
@@ -208,9 +226,15 @@ function renderFlick() {
   const b = store.book(h.b) || { title: 'Unknown' };
   const card = $('#flickCard');
   card.classList.toggle('fav', store.isFav(h.id));
-  $('#flickBook').textContent = b.title;
+  $('#flickBook').innerHTML = markHtml(b.title);
   $('#flickBook').onclick = () => focusBook(h.b);
-  $('#flickThemes').textContent = (h.th || []).map(t => (store.theme(t) || {}).name).filter(Boolean).join(' · ');
+  const themesTxt = (h.th || []).map(t => (store.theme(t) || {}).name).filter(Boolean).join(' · ');
+  let metaHtml = escapeHtml(themesTxt);
+  if (searchTerms().length) {
+    const n = countMatches(h.t, b.title);
+    if (n) metaHtml = (themesTxt ? metaHtml + ' · ' : '') + matchBadge(n);
+  }
+  $('#flickThemes').innerHTML = metaHtml;
   $('#flickText').innerHTML = markHtml(h.t);
   const nt = store.note(h.id);
   const nEl = $('#flickNote');

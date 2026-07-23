@@ -20,8 +20,9 @@ export function configure(url, token) {
 }
 export function disconnect() { cfg = { url: '', token: '' }; save(); }
 
-async function call(payload, { timeout = 20000 } = {}) {
+async function call(payload, { timeout = 30000 } = {}) {
   if (!isConfigured()) throw new Error('not configured');
+  if (/\/dev(\?|$)/.test(cfg.url)) throw new Error("that's the /dev URL — use the /exec deployment URL instead");
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
   try {
@@ -36,9 +37,19 @@ async function call(payload, { timeout = 20000 } = {}) {
     const text = await res.text();
     let data;
     try { data = JSON.parse(text); }
-    catch { throw new Error('Bad response from script (is the URL the /exec deployment?)'); }
+    catch {
+      // Apps Script served HTML (a login/permission page) instead of JSON
+      if (/<html|sign in|accounts\.google|need permission/i.test(text)) {
+        throw new Error("the script isn't public — set the deployment's access to “Anyone” (not “Anyone with Google account”) and redeploy");
+      }
+      throw new Error('Bad response from script (is the URL the /exec deployment?)');
+    }
     if (!data.ok) throw new Error(data.error || 'script error');
     return data;
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('timed out — no response. Open the /exec URL in a browser tab: if it shows a Google login page, set the deployment access to “Anyone” and redeploy');
+    if (e instanceof TypeError) throw new Error('network/CORS blocked — check the URL ends in /exec and the deployment access is “Anyone”');
+    throw e;
   } finally { clearTimeout(timer); }
 }
 
