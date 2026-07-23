@@ -427,6 +427,7 @@ function bindStatic() {
   $('#disconnect').addEventListener('click', () => { sync.disconnect(); hydrateConfigUI(); updateSyncBadge('local'); $('#connMsg').textContent = 'Disconnected. Still saving locally.'; $('#connMsg').className = 'conn-msg'; });
   $('#pushAll').addEventListener('click', async () => { if (!sync.isConfigured()) return setConn('Connect a Sheet first.', false); setConn('Pushing…'); try { await store.resetForFullPush(); setConn('Pushed all local data to the Sheet.', true); } catch (e) { setConn(e.message, false); } });
   $('#exportJson').addEventListener('click', exportJson);
+  $('#checkUpdate').addEventListener('click', checkForUpdate);
 
   // keyboard
   document.addEventListener('keydown', onKey);
@@ -497,6 +498,27 @@ function exportJson() {
 }
 
 // ---------- service worker ----------
+let swReg = null;
 function registerSW() {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    swReg = reg;
+    // check for a new version each time the app regains focus
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+  // when a new SW activates and takes control, reload once to show the update
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded) return; reloaded = true; location.reload();
+  });
+}
+async function checkForUpdate() {
+  if (!swReg) return setConn('Updates not available in this browser.', false);
+  setConn('Checking for updates…');
+  try {
+    await swReg.update();
+    // if a worker is waiting, tell it to activate (triggers controllerchange -> reload)
+    if (swReg.waiting) { swReg.waiting.postMessage('skipWaiting'); setConn('Updating…', true); }
+    else setConn('You’re on the latest version ✓', true);
+  } catch (e) { setConn('Update check failed: ' + e.message, false); }
 }
