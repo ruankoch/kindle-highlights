@@ -108,6 +108,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 .hl-book:hover{text-decoration:underline}
 .hl-actions{display:flex;gap:4px;flex:0 0 auto}
 .hl-text{font-size:15px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+mark{background:#ffe37a;color:#10141d;border-radius:3px;padding:0 2px;font-weight:600}
 .hl-note{margin-top:8px;padding:8px 10px;background:var(--panel2);border-radius:8px;font-size:13px;color:var(--muted);white-space:pre-wrap}
 .hl-themes{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
 .tag{font-size:11px;background:var(--chip-bg);border:1px solid var(--border);border-radius:20px;padding:2px 9px;color:var(--muted)}

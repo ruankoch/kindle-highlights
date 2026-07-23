@@ -7,6 +7,21 @@ const $$ = s => [...document.querySelectorAll(s)];
 const fmt = new Intl.NumberFormat();
 const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 
+// escape + wrap current search terms in <mark> for yellow highlighting
+function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function searchTerms() {
+  const q = (F.search || '').trim();
+  return q ? q.split(/\s+/).filter(Boolean) : [];
+}
+function markHtml(text) {
+  const esc = escapeHtml(text);
+  const terms = searchTerms();
+  if (!terms.length) return esc;
+  const pat = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).filter(Boolean).sort((a, b) => b.length - a.length);
+  if (!pat.length) return esc;
+  return esc.replace(new RegExp('(' + pat.join('|') + ')', 'gi'), '<mark>$1</mark>');
+}
+
 // ---------- filter + view state ----------
 const F = { books: new Set(), themes: new Set(), search: '', favOnly: false, sort: 'book' };
 let tab = 'browse';          // browse | books | favourites
@@ -159,7 +174,8 @@ function hlCard(h) {
     actionBtn('🗑', 'Delete', false, () => { if (confirm('Delete this highlight? It will be hidden on all your devices (reversible from the Sheet).')) store.toggleDelete(h.id); }, 'danger'),
   );
   top.append(bk, acts);
-  const txt = el('div', 'hl-text', h.t);
+  const txt = el('div', 'hl-text');
+  txt.innerHTML = markHtml(h.t);
   card.append(top, txt);
   const nt = store.note(h.id);
   if (nt) card.append(el('div', 'hl-note', '✎ ' + nt));
@@ -195,7 +211,7 @@ function renderFlick() {
   $('#flickBook').textContent = b.title;
   $('#flickBook').onclick = () => focusBook(h.b);
   $('#flickThemes').textContent = (h.th || []).map(t => (store.theme(t) || {}).name).filter(Boolean).join(' · ');
-  $('#flickText').textContent = h.t;
+  $('#flickText').innerHTML = markHtml(h.t);
   const nt = store.note(h.id);
   const nEl = $('#flickNote');
   if (nt) { nEl.textContent = '✎ ' + nt; nEl.classList.remove('hidden'); } else nEl.classList.add('hidden');
