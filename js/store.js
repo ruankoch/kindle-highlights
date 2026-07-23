@@ -80,7 +80,7 @@ export async function init() {
   emit('ready');
 
   // background sync if configured
-  if (sync.isConfigured()) pullAndFlush();
+  if (sync.isConfigured()) pullAndFlush().catch(() => {});
   return state;
 }
 
@@ -153,7 +153,7 @@ function enqueue(op) {
   if (!sync.isConfigured()) return;
   outbox.push(op);
   persist();
-  flush();
+  flush().catch(() => emit('syncerror'));
 }
 
 export function toggleFav(id) {
@@ -214,15 +214,16 @@ function nextId(kind) {
 
 // ---------- sheet sync ----------
 export async function pullAndFlush() {
+  emit('syncing');
   try {
-    emit('syncing');
     const remote = await sync.pull();
     mergeRemote(remote);
     await flush(); // send any queued local ops
     emit('synced');
   } catch (e) {
-    console.warn('sync pull failed', e);
+    console.warn('sync failed', e);
     emit('syncerror');
+    throw e; // let callers (Test & sync / Push) report the real reason
   }
 }
 
@@ -280,7 +281,7 @@ export async function flush() {
   try {
     while (outbox.length) {
       const op = outbox[0];
-      const res = await sync.send(op);
+      const res = await sync.send(op); // throws on a non-ok response — do NOT swallow
       if (op.t === 'addHl' && res && res.id) {
         // reconcile server-assigned id if different
         const local = state.user.added.find(h => h.id === op.hl.id);
@@ -290,10 +291,7 @@ export async function flush() {
       persist();
     }
     emit('synced');
-  } catch (e) {
-    console.warn('flush stalled', e);
-    emit('syncerror');
-  } finally { flushing = false; }
+  } finally { flushing = false; } // errors propagate to the caller; failed op stays queued for retry
 }
 
 export function pendingCount() { return outbox.length; }

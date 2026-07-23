@@ -398,7 +398,7 @@ function bindStatic() {
   $('#menuBtn').addEventListener('click', openSidebar);
   $('#scrim').addEventListener('click', closeSidebar);
   $('#settingsBtn').addEventListener('click', () => openModal('#settingsModal'));
-  $('#syncBtn').addEventListener('click', () => { if (sync.isConfigured()) store.pullAndFlush(); else openModal('#settingsModal'); });
+  $('#syncBtn').addEventListener('click', () => { if (sync.isConfigured()) store.pullAndFlush().catch(() => {}); else openModal('#settingsModal'); });
 
   $('#searchBox').addEventListener('input', e => { clearTimeout(searchT); searchT = setTimeout(() => { F.search = e.target.value; renderSidebar(); refresh(); }, 160); });
   $('#favOnly').addEventListener('change', e => { F.favOnly = e.target.checked; renderSidebar(); refresh(); });

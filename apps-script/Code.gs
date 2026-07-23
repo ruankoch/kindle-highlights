@@ -100,7 +100,9 @@ function colValues(sh, col) {
 }
 
 function findRow(sh, id) {
-  var vals = sh.getRange(2, 1, Math.max(0, sh.getLastRow() - 1), 1).getValues();
+  var last = sh.getLastRow();
+  if (last < 2) return -1;                         // header only / empty tab
+  var vals = sh.getRange(2, 1, last - 1, 1).getValues();
   for (var i = 0; i < vals.length; i++) if (String(vals[i][0]) === String(id)) return i + 2;
   return -1;
 }
