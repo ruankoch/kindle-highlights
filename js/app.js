@@ -390,7 +390,14 @@ function bindStatic() {
   $('#selectVisibleBooks').addEventListener('click', selectVisibleBooks);
   $('#clearAll').addEventListener('click', () => { F.books.clear(); F.themes.clear(); F.search = ''; F.favOnly = false; $('#searchBox').value = ''; $('#favOnly').checked = false; renderSidebar(); refresh(); });
 
-  $('#sortSel').addEventListener('change', e => { F.sort = e.target.value; refresh(); });
+  $('#sortSel').addEventListener('change', e => {
+    F.sort = e.target.value;
+    const isRandom = F.sort === 'random';
+    $('#shuffleBtn').classList.toggle('hidden', !isRandom);
+    if (isRandom) { store.reshuffle(); flickIdx = 0; }
+    refresh();
+  });
+  $('#shuffleBtn').addEventListener('click', () => { store.reshuffle(); flickIdx = 0; page = 0; refresh(); toast('Shuffled'); });
   $('#modeList').addEventListener('click', () => { mode = 'list'; $('#modeList').classList.add('active'); $('#modeFlick').classList.remove('active'); refresh(); });
   $('#modeFlick').addEventListener('click', () => { mode = 'flick'; $('#modeFlick').classList.add('active'); $('#modeList').classList.remove('active'); refresh(); });
   $('#loadMore').addEventListener('click', () => { page++; renderList(); });

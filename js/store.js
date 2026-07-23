@@ -112,9 +112,20 @@ export function query({ books, themes, search, favOnly, sort } = {}) {
     case 'theme': res.sort((a, b) => (a.p || 99) - (b.p || 99) || a.b - b.b); break;
     case 'len': res.sort((a, b) => b.t.length - a.t.length); break;
     case 'added': res.sort((a, b) => (b._added || 0) - (a._added || 0) || b.id - a.id); break;
+    case 'random': { const s = randomSeed; res.sort((a, b) => rnd(a.id, s) - rnd(b.id, s)); break; }
     default: res.sort((a, b) => a.b - b.b || a.loc - b.loc); // by book
   }
   return res;
+}
+
+// seeded, stable pseudo-random order — same seed => same order (survives re-renders)
+let randomSeed = 1;
+export function reshuffle() { randomSeed = (Math.floor(Math.random() * 2147483646) + 1) | 0; return randomSeed; }
+function rnd(id, seed) {
+  let x = (Math.imul(id, 2654435761) ^ seed) >>> 0;
+  x = Math.imul(x ^ (x >>> 15), 2246822519);
+  x = (x ^ (x >>> 13)) >>> 0;
+  return x;
 }
 
 // counts of themes / books given the current (partial) filter — for sidebar badges.
