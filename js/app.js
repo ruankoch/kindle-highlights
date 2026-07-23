@@ -311,6 +311,23 @@ function focusBook(id) {
   closeSidebar();
 }
 
+// ---------- surprise me ----------
+function surpriseMe() {
+  // ignore current filters — random across the whole library
+  F.books.clear(); F.themes.clear(); F.search = ''; F.favOnly = false;
+  $('#searchBox').value = ''; $('#favOnly').checked = false;
+  // random sort + flick mode
+  F.sort = 'random'; $('#sortSel').value = 'random'; $('#shuffleBtn').classList.remove('hidden');
+  store.reshuffle(); flickIdx = 0;
+  mode = 'flick'; $('#modeFlick').classList.add('active'); $('#modeList').classList.remove('active');
+  // force browse tab
+  tab = 'browse';
+  $$('#tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.view === 'browse'));
+  $('#view-browse').classList.add('active'); $('#view-books').classList.remove('active');
+  renderSidebar(); refresh(); closeSidebar();
+  toast('🎲 Surprise!');
+}
+
 // ---------- tabs ----------
 function switchTab(t) {
   tab = t;
@@ -377,6 +394,7 @@ let searchT;
 function bindStatic() {
   $('#tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) switchTab(b.dataset.view); });
   $('#themeBtn').addEventListener('click', toggleTheme);
+  $('#surpriseBtn').addEventListener('click', surpriseMe);
   $('#menuBtn').addEventListener('click', openSidebar);
   $('#scrim').addEventListener('click', closeSidebar);
   $('#settingsBtn').addEventListener('click', () => openModal('#settingsModal'));
